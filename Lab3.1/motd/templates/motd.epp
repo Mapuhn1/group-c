@@ -1,0 +1,16 @@
+<%- | String $hostname,
+String $ip,
+String $os,
+String $managed_by = 'Puppet'
+|-%>
+########################################################
+# <%= $hostname %>
+# IP Address : <%= $ip %>
+# OS
+: <%= $os %>
+#
+# This system is managed by <%= $managed_by %>.
+# Unauthorised access is prohibited.
+# Do not edit /etc/motd manually- changes will be
+# overwritten on the next Puppet run.
+########################################################
