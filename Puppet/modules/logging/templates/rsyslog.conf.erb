@@ -1,0 +1,47 @@
+# /etc/rsyslog.d/90-puppet-managed.conf
+# Managed by Puppet-- donot edit manually.
+# Generated for: <%= @facts['networking']['fqdn'] %>
+# Role: <%= @is_server ? 'log server' :'logclient'%>
+<% if @is_server-%>
+##############################################################
+# SERVER CONFIGURATION
+# This node receives logs from all othernodesin the lab.
+##############################################################
+# Load the TCPinputmodule
+module(load="imtcp")
+# Listen for incoming log messages on TCP port514
+input(type="imtcp" port="514")
+# Define a template: store logs in per-hostname subdirectories
+# %HOSTNAME% is replaced by rsyslog with the sending host's name
+# %PROGRAMNAME% is the process that generated the message
+template(
+name="RemoteLogs"
+type="string"
+string="/var/log/remote/%HOSTNAME%/%PROGRAMNAME%.log"
+)
+# Apply the template: write all received messages using RemoteLogs
+if $fromhost-ip != '127.0.0.1' then {
+action(type="omfile" dynaFile="RemoteLogs")
+stop
+}
+<% else-%>
+##############################################################
+# CLIENT CONFIGURATION
+# This node forwards all logs tothe centrallog server.
+##############################################################
+# Forward all log messages to mgmt-x viaTCP(@@)
+# TCP guarantees delivery; UDP (@) drops messages if server is down
+# Queue settings ensure no messages are lost iftheserveris brieflyunavailable
+action(
+type="omfwd"
+target="<%= @log_server %>"
+port="514"
+protocol="tcp"
+action.resumeRetryCount="100"
+queue.type="linkedList"
+queue.size="10000"
+queue.filename="remote_queue"
+queue.saveOnShutdown="on"
+)
+<% end-%>
+
