@@ -43,7 +43,6 @@ owner => 'root',
 group => 'puppet',
 mode => '0775',
 }
-
 #--- Resource : Nagios host definition for db-x--
 # This Puppet-native resource type (provided by puppetlabs-nagios_core)
 # writes a Nagios host definition into ppt_hosts.cfg inside conf.d/.
@@ -62,78 +61,25 @@ mode => '0775',
 #}
 
 
-nagios::monitored_host { 'db-c.oe2.org.nz': host_alias => 'db-c'}
+nagios::monitored_host { 'db-c.oe2.org.nz':
+  host_alias => 'db-c',
+}
 
 
 # --- SSH service check for db-x ---
 # Verifies that TCP port 22 is open and accepting connections.
 # This catches cases where the host responds to ping but SSH has crashed.
-#nagios_service { 'SSH on db-c':
-#host_name => 'db-c.oe2.org.nz',
-#service_description => 'SSH',
-#target => '/etc/nagios4/conf.d/ppt_services.cfg',
-#check_command => 'check_ssh',
-#check_period => '24x7',
-#max_check_attempts => 3,
-#check_interval => 2,
-#notification_interval => 30,
-#notification_period => '24x7',
-#notification_options => 'w,c,r',
-#}
-
-# --- Service: SSH check on all SSH servers ---
-# Applies to every member of my-ssh-servers via hostgroup_name.
-# When a new host is added to the group, this check follows automatically.
-
-nagios_service { 'ssh-check':
-  service_description   => 'SSH',
-  hostgroup_name        => 'my-ssh-servers',
-  target                => '/etc/nagios4/conf.d/ppt_services.cfg',
-  check_command         => 'check_ssh',
-  max_check_attempts    => 3,
-  check_interval        => 5,
-  retry_interval        => 1,
-  check_period          => '24x7',
-  notification_interval => 30,
-  notification_period   => '24x7',
-  notification_options  => 'w,u,c,r',
-  contact_groups        => 'admins',
-}
-
-# --- Service: MariaDB check on the database server ---
-# Uses check_mysql with credentials stored in resource.cfg ($USER10$/$USER11$)
-# The ! delimiter passes each argument to the command template
-nagios_service { 'mariadb-check':
-  service_description => 'MariaDB',
-  hostgroup_name => 'my-db-servers',
-  target => '/etc/nagios4/conf.d/ppt_services.cfg',
-  check_command => 'check_mysql_cmdlinecred!nagios!NagiosMonitor1',
-  max_check_attempts => 3,
-  check_interval => 5,
-  retry_interval => 1,
-  check_period => '24x7',
-  notification_interval => 30,
-  notification_period => '24x7',
-  notification_options => 'w,u,c,r',
-  contact_groups => 'admins',
-}
-
-# --- Service: HTTPS check on the management server ---
-# Checks that the Nagios web interface is reachable and returns HTTP 200.
-# -S enables SSL (HTTPS), --sni sends the correct hostname for TLS.
-nagios_service { 'https-nagios':
-  service_description => 'HTTPS Nagios Interface',
-  hostgroup_name => 'my-mgmt-servers',
-  target => '/etc/nagios4/conf.d/ppt_services.cfg',
-  check_command => 'check_http! -S 1.2+ --sni -u /nagios4/ -e "HTTP/1.1 401"',
-  max_check_attempts => 3,
-  check_interval => 5,
-  retry_interval => 1,
-  check_period => '24x7',
-  notification_interval => 30,
-  notification_period => '24x7',
-  notification_options => 'w,u,c,r',
-  contact_groups => 'admins',
+nagios_service { 'SSH on db-c':
+host_name => 'db-c.oe2.org.nz',
+service_description => 'SSH',
+target => '/etc/nagios4/conf.d/ppt_services.cfg',
+check_command => 'check_ssh',
+check_period => '24x7',
+max_check_attempts => 3,
+check_interval => 2,
+notification_interval => 30,
+notification_period => '24x7',
+notification_options => 'w,c,r',
 }
 
 # --- mgmt-x as a monitored host ---
@@ -149,7 +95,9 @@ nagios_service { 'https-nagios':
 #notification_options => 'd,u,r',
 #}
 
-nagios::monitored_host { 'mgmt-c.oe2.org.nz': host_alias => 'mgmt-c'}
+nagios::monitored_host { 'mgmt-c.oe2.org.nz':
+  host_alias => 'mgmt-c',
+}
 
 
 # Set Apache ServerName to the group domain.
@@ -161,7 +109,7 @@ line => 'ServerName group-c.op-bit.nz',
 match => '^ServerName',
 }
 
-
+}
 
 # --- app-c as a monitored host ---
 # Monitoring the management server itself.
@@ -176,7 +124,9 @@ match => '^ServerName',
 #notification_options => 'd,u,r',
 #}
 
-nagios::monitored_host { 'app-c.oe2.org.nz': host_alias => 'app-c'}
+nagios::monitored_host { 'app-c.oe2.org.nz':
+  host_alias => 'app-c',
+}
 
 
 
@@ -193,30 +143,10 @@ nagios::monitored_host { 'app-c.oe2.org.nz': host_alias => 'app-c'}
 #notification_options => 'd,u,r',
 #}
 
-nagios::monitored_host { 'backup-c.oe2.org.nz':  host_alias => 'backup-c'}
-
-# -- Host groups --
-# Group all hosts that run SSH (db, app, backup, and mgmt)
-# members must exactly match the nagios_host resource titles
-nagios_hostgroup { 'my-ssh-servers':
-target => '/etc/nagios4/conf.d/ppt_hostgroups.cfg',
-alias => 'All SSH Servers',
-members => 'db-c.oe2.org.nz,app-c.oe2.org.nz,backup-c.oe2.org.nz,mgmt-c.oe2.org.nz'
-}
-
-# Group containing only the database server
-nagios_hostgroup { 'my-db-servers':
-target => '/etc/nagios4/conf.d/ppt_hostgroups.cfg',
-alias => 'Database Servers',
-members => 'db-c.oe2.org.nz',
-}
-# Group containing the management server for mgmt-specific checks
-nagios_hostgroup { 'my-mgmt-servers':
-target => '/etc/nagios4/conf.d/ppt_hostgroups.cfg',
-alias => 'Management Servers',
-members => 'mgmt-c.oe2.org.nz',
+nagios::monitored_host { 'backup-c.oe2.org.nz':
+  host_alias => 'backup-c',
 }
 
 
 
-}
+
