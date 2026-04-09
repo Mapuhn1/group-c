@@ -13,15 +13,17 @@ node 'db-c.oe2.org.nz' {
   package { 'vim':
      ensure => installed,
   }
-
+  include nrpe
 }
 
 node 'app-c.oe2.org.nz' {
   include common
+  include nrpe
 }
 
 node 'backup-c.oe2.org.nz' {
   include common
+  include nrpe
 }
 
 # mgmt-c should also be a Puppet agent

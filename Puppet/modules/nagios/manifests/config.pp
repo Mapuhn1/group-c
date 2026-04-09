@@ -217,6 +217,80 @@ alias => 'Management Servers',
 members => 'mgmt-c.oe2.org.nz',
 }
 
+# --- Host group: all nodes monitored via NRPE ---
+# Includes the three agent nodes; mgmt-c is excluded
+# (mgmt-c is the monitoring server, not a monitored node)
 
+nagios_hostgroup { 'my-nrpe-servers':
+  target => '/etc/nagios4/conf.d/ppt_hostgroups.cfg',
+  alias  => 'NRPE Monitored Servers',
+  members => 'db-c.oe2.org.nz,app-c.oe2.org.nz,backup-c.oe2.org.nz',
+}
+
+# --- NRPE service: disk space check ---
+# Uses check_nrpe with the argument matching the command[] name in nrpe.cfg
+# The ! delimiter passes the command name to the check_nrpe plugin template
+
+nagios_service { 'nrpe-disk':
+  service_description   => 'Disk Space',
+  hostgroup_name        => 'my-nrpe-servers',
+  target                => '/etc/nagios4/conf.d/ppt_services.cfg',
+  check_command         => 'check_nrpe!check_disk',
+  max_check_attempts    => 3,
+  normal_check_interval => 10,
+  retry_check_interval  => 2,
+  check_period          => '24x7',
+  notification_interval => 30,
+  notification_period   => '24x7',
+  notification_options  => 'w,u,c,r',
+}
+
+# --- NRPE service: CPU load check ---
+
+nagios_service { 'nrpe-load':
+  service_description   => 'CPU Load',
+  hostgroup_name        => 'my-nrpe-servers',
+  target                => '/etc/nagios4/conf.d/ppt_services.cfg',
+  check_command         => 'check_nrpe!check_load',
+  max_check_attempts    => 3,
+  normal_check_interval => 5,
+  retry_check_interval  => 1,
+  check_period          => '24x7',
+  notification_interval => 30,
+  notification_period   => '24x7',
+  notification_options  => 'w,u,c,r',
+}
+
+# --- NRPE service: logged-in users check ---
+
+nagios_service { 'nrpe-users':
+  service_description   => 'Logged-In Users',
+  hostgroup_name        => 'my-nrpe-servers',
+  target                => '/etc/nagios4/conf.d/ppt_services.cfg',
+  check_command         => 'check_nrpe!check_users',
+  max_check_attempts    => 3,
+  normal_check_interval => 10,
+  retry_check_interval  => 2,
+  check_period          => '24x7',
+  notification_interval => 30,
+  notification_period   => '24x7',
+  notification_options  => 'w,u,c,r',
+}
+
+# --- NRPE service: process count check ---
+
+nagios_service { 'nrpe-procs':
+  service_description   => 'Process Count',
+  hostgroup_name        => 'my-nrpe-servers',
+  target                => '/etc/nagios4/conf.d/ppt_services.cfg',
+  check_command         => 'check_nrpe!check_procs',
+  max_check_attempts    => 3,
+  normal_check_interval => 5,
+  retry_check_interval  => 1,
+  check_period          => '24x7',
+  notification_interval => 30,
+  notification_period   => '24x7',
+  notification_options  => 'w,u,c,r',
+}
 
 }
