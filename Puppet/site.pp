@@ -30,4 +30,5 @@ node 'backup-c.oe2.org.nz' {
 node 'mgmt-c.oe2.org.nz' {
   include common
   include nagios
+  include nagios_slack
 }
