@@ -7,7 +7,7 @@ class nagios {
   contain nagios::install
   contain nagios::config
   contain nagios::service
-  
+
   # Enforce application order
   Class['nagios::install']
   -> Class['nagios::config']

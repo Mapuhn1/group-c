@@ -246,7 +246,7 @@ command[check_load]=/usr/lib/nagios/plugins/check_load -w 5,4,3 -c 10,8,6
 # Logged-in users check
 # -w 5 : warn if more than 5 users logged in simultaneously
 # -c 10: critical above 10
-command[check_users]=/usr/lib/nagios/plugins/check_users -w 5 -c 10
+command[check_users]=/usr/lib/nagios/plugins/check_users -w 1 -c 10
 
 # Running processes check
 # -w 250 : warn above 250 processes
@@ -257,6 +257,13 @@ command[check_zombie_procs]=/usr/lib/nagios/plugins/check_procs -w 5 -c 10 -s Z
 #Others
 command[check_mem]=/usr/lib/nagios/plugins/check_mem.pl -f -w 5 -c 1
 command[check_filechange]=/usr/lib/nagios/plugins/check_filechange.py -p /var/log/inotify.log -f /etc/
+command[check_dns]=/usr/lib/nagios/plugins/check_dns -H google.com -w 2 -c 5
+command[check_swap]=/usr/lib/nagios/plugins/check_swap -w 20% -c 10%
+
+#command[check_apt]=/usr/lib/nagios/plugins/check_apt -d
+#command[check_icmp]=/usr/lib/nagios/plugins/check_icmp -H mgmt-c -w 200ms,40% -c 500ms,80%
+
+
 # The following examples allow user-supplied arguments and can
 # only be used if the NRPE daemon was compiled with support for 
 # command arguments *AND* the dont_blame_nrpe directive in this

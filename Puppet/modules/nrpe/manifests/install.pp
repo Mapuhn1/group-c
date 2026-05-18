@@ -13,4 +13,16 @@ package { 'monitoring-plugins':
 ensure => present,
 require => Package['nagios-nrpe-server'],
 }
+
+
+# Check_mem plugin
+file { '/usr/lib/nagios/plugins/check_mem.pl':
+  ensure  => file,
+  source  => 'puppet:///modules/nrpe/check_mem.pl',
+  owner   => 'nagios',
+  group   => 'nagios',
+  mode    => '0755',
+  require => Package['monitoring-plugins'],
+}
+
 }

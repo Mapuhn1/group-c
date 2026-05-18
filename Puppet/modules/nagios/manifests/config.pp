@@ -44,6 +44,26 @@ group => 'puppet',
 mode => '0775',
 }
 
+file { '/etc/nagios4/conf.d/ppt_commands.cfg':
+  ensure  => file,
+  owner   => 'root',
+  group   => 'nagios',
+  mode    => '0640',
+}
+
+file { '/usr/lib/nagios/plugins':
+    ensure => directory,
+}
+
+file { '/usr/lib/nagios/plugins/check_mem.pl':
+    ensure  => file,
+    source  => 'puppet:///modules/nagios/check_mem.pl',
+    owner   => 'nagios',
+    group   => 'nagios',
+    mode    => '0755',
+    require => File['/usr/lib/nagios/plugins'],
+}
+
 #--- Resource : Nagios host definition for db-x--
 # This Puppet-native resource type (provided by puppetlabs-nagios_core)
 # writes a Nagios host definition into ppt_hosts.cfg inside conf.d/.
@@ -91,13 +111,13 @@ nagios_service { 'ssh-check':
   target                => '/etc/nagios4/conf.d/ppt_services.cfg',
   check_command         => 'check_ssh',
   max_check_attempts    => 3,
-  check_interval        => 5,
-  retry_interval        => 1,
+  normal_check_interval        => 5,
+  retry_check_interval        => 1,
   check_period          => '24x7',
   notification_interval => 30,
   notification_period   => '24x7',
   notification_options  => 'w,u,c,r',
-  contact_groups        => 'admins',
+  contact_groups        => 'slackgroup',
 }
 
 # --- Service: MariaDB check on the database server ---
@@ -109,13 +129,13 @@ nagios_service { 'mariadb-check':
   target => '/etc/nagios4/conf.d/ppt_services.cfg',
   check_command => 'check_mysql_cmdlinecred!nagios!NagiosMonitor1',
   max_check_attempts => 3,
-  check_interval => 5,
-  retry_interval => 1,
+  normal_check_interval => 5,
+  retry_check_interval => 1,
   check_period => '24x7',
   notification_interval => 30,
   notification_period => '24x7',
   notification_options => 'w,u,c,r',
-  contact_groups => 'admins',
+  contact_groups => 'slackgroup',
 }
 
 # --- Service: HTTPS check on the management server ---
@@ -133,7 +153,7 @@ nagios_service { 'https-nagios':
   notification_interval => 30,
   notification_period => '24x7',
   notification_options => 'w,u,c,r',
-  contact_groups => 'admins',
+  contact_groups => 'slackgroup',
 }
 
 # --- mgmt-x as a monitored host ---
@@ -216,6 +236,13 @@ target => '/etc/nagios4/conf.d/ppt_hostgroups.cfg',
 alias => 'Management Servers',
 members => 'mgmt-c.oe2.org.nz',
 }
+# Group containing the web servers
+nagios_hostgroup { 'my-web-servers':
+target => '/etc/nagios4/conf.d/ppt_hostgroups.cfg',
+alias => 'Web Servers',
+members => 'mgmt-c.oe2.org.nz,app-c.oe2.org.nz',
+}
+
 
 # --- Host group: all nodes monitored via NRPE ---
 # Includes the three agent nodes; mgmt-c is excluded
@@ -226,6 +253,150 @@ nagios_hostgroup { 'my-nrpe-servers':
   alias  => 'NRPE Monitored Servers',
   members => 'db-c.oe2.org.nz,app-c.oe2.org.nz,backup-c.oe2.org.nz',
 }
+
+# --- MGMT Services ---
+
+# MGMT Memory Check
+nagios_command { 'check_mgmt_mem':
+  command_line => '/usr/lib/nagios/plugins/check_mem.pl -f -w 5 -c 1',
+  target       => '/etc/nagios4/conf.d/ppt_commands.cfg',
+}
+
+nagios_service { 'mgmt-mem':
+  service_description   => 'Memory Usage',
+  hostgroup_name        => 'my-mgmt-servers',
+  target                => '/etc/nagios4/conf.d/ppt_services.cfg',
+  check_command         => 'check_mgmt_mem',
+  max_check_attempts    => 3,
+  normal_check_interval => 10,
+  retry_check_interval  => 2,
+  check_period          => '24x7',
+  notification_interval => 30,
+  notification_period   => '24x7',
+  notification_options  => 'w,u,c,r',
+  contact_groups        => 'slackgroup',
+}
+
+# MGMT CPU Load Check
+nagios_command { 'check_mgmt_load':
+  command_line => '/usr/lib/nagios/plugins/check_load -w 5,4,3 -c 10,8,6',
+  target       => '/etc/nagios4/conf.d/ppt_commands.cfg',
+}
+
+nagios_service { 'mgmt-load':
+  service_description   => 'CPU Load',
+  hostgroup_name        => 'my-mgmt-servers',
+  target                => '/etc/nagios4/conf.d/ppt_services.cfg',
+  check_command         => 'check_mgmt_load',
+  max_check_attempts    => 3,
+  normal_check_interval => 10,
+  retry_check_interval  => 2,
+  check_period          => '24x7',
+  notification_interval => 30,
+  notification_period   => '24x7',
+  notification_options  => 'w,u,c,r',
+  contact_groups        => 'slackgroup',
+}
+
+#MGMT Disk Space check
+nagios_command { 'check_mgmt_disk':
+  command_line => '/usr/lib/nagios/plugins/check_disk -w 20% -c 10% -p /',
+  target       => '/etc/nagios4/conf.d/ppt_commands.cfg',
+}
+
+nagios_service { 'mgmt-disk':
+  service_description   => 'Disk Space',
+  hostgroup_name        => 'my-mgmt-servers',
+  target                => '/etc/nagios4/conf.d/ppt_services.cfg',
+  check_command         => 'check_mgmt_disk',
+  max_check_attempts    => 3,
+  normal_check_interval => 10,
+  retry_check_interval  => 2,
+  check_period          => '24x7',
+  notification_interval => 30,
+  notification_period   => '24x7',
+  notification_options  => 'w,u,c,r',
+  contact_groups        => 'slackgroup',
+}
+
+#MGMT Logged-in users check
+nagios_command { 'check_mgmt_users':
+  command_line => '/usr/lib/nagios/plugins/check_users -w 1 -c 10',
+  target       => '/etc/nagios4/conf.d/ppt_commands.cfg',
+}
+
+nagios::monitored_service { 'mgmt-users':
+  service_description => 'Logged-In Users',
+  hostgroup_name      => 'my-mgmt-servers',
+  check_command       => 'check_mgmt_users',
+}
+
+#MGMT Process-count check
+nagios_command { 'check_mgmt_procs':
+  command_line => '/usr/lib/nagios/plugins/check_procs -w 250 -c 400',
+  target       => '/etc/nagios4/conf.d/ppt_commands.cfg',
+}
+
+nagios::monitored_service { 'mgmt-procs':
+  service_description => 'Process Count',
+  hostgroup_name      => 'my-mgmt-servers',
+  check_command       => 'check_mgmt_procs',
+}
+
+#MGMT Zombie Processes check
+nagios_command { 'check_mgmt_zombie_procs':
+  command_line => '/usr/lib/nagios/plugins/check_procs -w 5 -c 10 -s Z',
+  target       => '/etc/nagios4/conf.d/ppt_commands.cfg',
+}
+
+nagios::monitored_service { 'mgmt-zombie-procs':
+  service_description => 'Zombie Processes',
+  hostgroup_name      => 'my-mgmt-servers',
+  check_command       => 'check_mgmt_procs',
+}
+
+#MGMT DNS check
+nagios_command { 'check_mgmt_dns':
+  command_line => '/usr/lib/nagios/plugins/check_dns -H google.com -w 2 -c 5',
+  target       => '/etc/nagios4/conf.d/ppt_commands.cfg',
+}
+
+nagios::monitored_service { 'mgmt-dns':
+  service_description => 'DNS Lookup',
+  hostgroup_name      => 'my-mgmt-servers',
+  check_command       => 'check_mgmt_dns',
+}
+
+#MGMT Swap check
+nagios_command { 'check_mgmt_swap':
+  command_line => '/usr/lib/nagios/plugins/check_swap -w 20% -c 10%',
+  target       => '/etc/nagios4/conf.d/ppt_commands.cfg',
+}
+
+nagios::monitored_service { 'mgmt-swap':
+  service_description => 'Swap Usage',
+  hostgroup_name      => 'my-mgmt-servers',
+  check_command       => 'check_mgmt_swap',
+}
+
+
+
+# --- Web Services ---
+# HTTP Check
+nagios_command { 'web_http':
+  command_line => '/usr/lib/nagios/plugins/check_http -H localhost -I 127.0.0.1 -u / -w 5 -c 10',
+  target       => '/etc/nagios4/conf.d/ppt_commands.cfg',
+}
+
+nagios::monitored_service { 'mgmt-http':
+  service_description => 'HTTP',
+  hostgroup_name      => 'my-web-servers',
+  check_command       => 'web_http',
+}
+
+
+
+# --- NRPE Services ---
 
 # --- NRPE service: disk space check ---
 # Uses check_nrpe with the argument matching the command[] name in nrpe.cfg
@@ -243,6 +414,23 @@ nagios_service { 'nrpe-disk':
   notification_interval => 30,
   notification_period   => '24x7',
   notification_options  => 'w,u,c,r',
+  contact_groups        => 'slackgroup'
+}
+
+# --- NRPE service: Memory check ---
+nagios_service { 'nrpe-mem':
+  service_description   => 'Memory Usage',
+  hostgroup_name        => 'my-nrpe-servers',
+  target                => '/etc/nagios4/conf.d/ppt_services.cfg',
+  check_command         => 'check_nrpe!check_mem',
+  max_check_attempts    => 3,
+  normal_check_interval => 10,
+  retry_check_interval  => 2,
+  check_period          => '24x7',
+  notification_interval => 30,
+  notification_period   => '24x7',
+  notification_options  => 'w,u,c,r',
+  contact_groups        => 'slackgroup',
 }
 
 # --- NRPE service: CPU load check ---
@@ -259,6 +447,7 @@ nagios_service { 'nrpe-load':
   notification_interval => 30,
   notification_period   => '24x7',
   notification_options  => 'w,u,c,r',
+  contact_groups        => 'slackgroup'
 }
 
 # --- NRPE service: logged-in users check ---
@@ -275,6 +464,7 @@ nagios_service { 'nrpe-users':
   notification_interval => 30,
   notification_period   => '24x7',
   notification_options  => 'w,u,c,r',
+  contact_groups        => 'slackgroup'
 }
 
 # --- NRPE service: process count check ---
@@ -291,6 +481,71 @@ nagios_service { 'nrpe-procs':
   notification_interval => 30,
   notification_period   => '24x7',
   notification_options  => 'w,u,c,r',
+  contact_groups        => 'slackgroup'
+}
+
+# -- NRPE service: zombie process check --
+
+nagios_service { 'nrpe-zombies':
+  service_description   => 'Zombie Processes',
+  hostgroup_name        => 'my-nrpe-servers',
+  target                => '/etc/nagios4/conf.d/ppt_services.cfg',
+  check_command         => 'check_nrpe!check_zombie_procs',
+  max_check_attempts    => 3,
+  normal_check_interval => 5,
+  retry_check_interval  => 1,
+  check_period          => '24x7',
+  notification_interval => 30,
+  notification_period   => '24x7',
+  notification_options  => 'w,u,c,r',
+  contact_groups        => 'slackgroup',
+}
+
+nagios::monitored_service { 'nrpe-dns':
+  service_description => 'DNS Lookup',
+  hostgroup_name      => 'my-nrpe-servers',
+  check_command       => 'check_nrpe!check_dns',
+}
+
+
+nagios::monitored_service { 'nrpe-swap':
+  service_description => 'Swap Usage',
+  hostgroup_name      => 'my-nrpe-servers',
+  check_command       => 'check_nrpe!check_swap',
+}
+
+
+# --- Slack contact ---
+# This contact represents the Slack channel as a notification recipient.
+# email is required by Nagios even when not using email notifications.
+# root@localhost is a harmless placeholder — no email will actually be sent.
+
+nagios_contact { 'slack':
+  target                       => '/etc/nagios4/conf.d/ppt_contacts.cfg',
+  alias                        => 'Slack Channel',
+  service_notification_period  => '24x7',
+  host_notification_period     => '24x7',
+  service_notification_options => 'w,u,c,r',
+  host_notification_options    => 'd,r',
+  service_notification_commands => 'notify-service-by-slack',
+  host_notification_commands    => 'notify-host-by-slack',
+  email                        => 'root@localhost',
+  owner                        => 'root',
+  group                        => 'nagios',
+  mode                         => '0644',
+}
+
+# --- Slack contact group ---
+# Groups the Slack contact so services can reference 'slackgroup'.
+# A contact group can contain multiple contacts (e.g., slack AND email).
+
+nagios_contactgroup { 'slackgroup':
+  target => '/etc/nagios4/conf.d/ppt_contacts.cfg',
+  alias  => 'Slack Notification Channel',
+  members => 'slack',
+  owner   => 'root',
+  group   => 'nagios',
+  mode    => '0644',
 }
 
 }

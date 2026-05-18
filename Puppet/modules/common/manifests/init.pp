@@ -4,4 +4,5 @@ class common {
 include sudo
 include motd
 include logging
+include fastfetch
 }
