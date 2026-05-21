@@ -1,0 +1,7 @@
+**/.cache/
+**/tmp/
+**/*.sock
+**/*.socket
+**/*.pid
+**/*~
+**/*.swp
