@@ -1,0 +1,18 @@
+groups:
+  - name: example-rules
+    interval: 30s
+    rules:
+      - record: job:http_inprogress_requests:sum
+        expr: sum(http_inprogress_requests) by (job)
+        labels:
+          team: backend
+
+      - alert: HighCPULoad
+        expr: rate(node_cpu_seconds_total{mode!="idle"}[5m]) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High CPU load on {{ $labels.instance }}"
+          description: "CPU usage is above 85% for more than 10 minutes."

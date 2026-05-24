@@ -3,13 +3,11 @@
 WRAPPER=/usr/local/lib/backup/rsync-to-backup.sh
 "$WRAPPER" puppet /etc/puppetlabs/code/ /etc/puppetlabs/puppet/
 
-"$WRAPPER" nagios /etc/nagios4/
+"$WRAPPER" nagios /etc/nagios/ 
 
 "$WRAPPER" apache /etc/apache2/
 
 "$WRAPPER" syslog /etc/rsyslog.d/
-
-"$WRAPPER" remote-logs /var/log/remote/
 
 "$WRAPPER" crontab /etc/cron.d/ /var/spool/cron/crontabs/
 

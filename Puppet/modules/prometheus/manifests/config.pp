@@ -8,7 +8,7 @@ class prometheus::config {
     mode   => '0755',
   }
 
-  # Ensure the data directory exists (PDF requirement)
+  # Ensure the data directory exists
   file { '/var/lib/prometheus/data':
     ensure => directory,
     owner  => 'prometheus',

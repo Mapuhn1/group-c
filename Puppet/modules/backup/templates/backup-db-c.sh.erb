@@ -1,0 +1,45 @@
+#!/bin/bash
+WRAPPER=/usr/local/lib/backup/rsync-to-backup.sh
+
+"$WRAPPER" puppet /etc/puppetlabs/code/ /etc/puppetlabs/puppet/
+
+"$WRAPPER" nagios /etc/nagios/ 
+
+"$WRAPPER" apache /etc/apache2/
+
+"$WRAPPER" syslog /etc/rsyslog.d/
+
+"$WRAPPER" crontab /etc/cron.d/ /var/spool/cron/crontabs/
+
+"$WRAPPER" ufw /etc/ufw
+
+# --- MariaDB config (rsync-safe) ---
+"$WRAPPER" mariadb-config /etc/mysql/
+
+# --- MariaDB data (requires dump first) ---
+DUMP_DIR=/tmp/mariadb-dump
+mkdir -p "$DUMP_DIR"
+
+# Dump all databases to SQL files
+mysqldump \
+    --all-databases \
+    --single-transaction \
+    --flush-logs \
+    --master-data=2 \
+    --routines \
+    --triggers \
+    --events \
+    -u root \
+    > "${DUMP_DIR}/all-databases_$(date +%Y-%m-%d_%H-%M-%S).sql"
+
+exitcode=$?
+
+if [ $exitcode -eq 0 ]; then
+    "$WRAPPER" mariadb-data "$DUMP_DIR/"
+else
+    logger -t backup "mariadb-dump FAILED with exit code ${exitcode}, skipping rsync"
+    exit $exitcode
+fi
+
+# --- Cleanup dumps older than 2 days ---
+find "$DUMP_DIR" -name "*.sql" -mtime +2 -delete

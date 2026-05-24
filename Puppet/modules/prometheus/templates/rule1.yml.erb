@@ -1,0 +1,81 @@
+groups:
+  - name: record-rules
+    interval: 30s
+    rules:
+      - record: node_memory_used_percent
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100
+        labels:
+          team: backend
+
+      - record: node_cpu_usage_percent
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+        labels:
+          team: backend
+
+      - record: node_disk_usage_percent
+        expr: (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes) * 100
+        labels:
+          team: backend
+
+      - record: node_logged_in_users
+        expr: node_logind_sessions
+        labels:
+          team: backend
+
+      - record: node_swap_usage_percent
+        expr: (1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100
+        labels:
+          team: backend
+
+  - name: alert-rules
+    interval: 30s
+    rules:
+      - alert: HighCPULoad
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High CPU load on {{ $labels.instance }}"
+          description: "CPU usage on {{ $labels.instance }} has exceeded 85% for 5 minutes. Current: {{ $value | printf \"%.1f\" }}%."
+
+      - alert: HighDiskUsage
+        expr: (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}% full."
+
+      - alert: TooManyLoggedInUsers
+        expr: node_logind_sessions > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Too many logged-in users on {{ $labels.instance }}"
+          description: "{{ $labels.instance }} has {{ $value }} active user sessions, which exceeds the threshold of 5."
+
+      - alert: HighMemoryUsage
+        expr: node_memory_used_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage on {{ $labels.instance }} has exceeded 85% for 5 minutes. Current: {{ $value | printf \"%.1f\" }}%."
+
+      - alert: HighSwapUsage
+        expr: (1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 50
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High swap usage on {{ $labels.instance }}"
+          description: "Swap usage on {{ $labels.instance }} has exceeded 50%, indicating memory pressure. Current: {{ $value | printf \"%.1f\" }}%."
