@@ -1,16 +1,11 @@
 class prometheus::install {
 
-  package { ['wget', 'tar']:
-    ensure => installed,
-  }
-
-  # Download Prometheus 2.53.4 (as per the PDF)
+  # Download Prometheus 2.53.4
   exec { 'download_prometheus':
     command => 'wget https://github.com/prometheus/prometheus/releases/download/v2.53.4/prometheus-2.53.4.linux-amd64.tar.gz',
     cwd     => '/opt',
     creates => '/opt/prometheus-2.53.4.linux-amd64.tar.gz',
     path    => ['/usr/bin', '/bin'],
-    require => Package['wget'],
   }
 
   # Extract the tarball
@@ -30,7 +25,7 @@ class prometheus::install {
     mode   => '0755',
   }
 
-  # Copy the entire extracted directory contents (PDF requirement)
+  # Copy the entire extracted directory contents
   exec { 'copy_prometheus_tree':
     command => 'cp -r /opt/prometheus-2.53.4.linux-amd64/* /usr/local/bin/prometheus/',
     creates => '/usr/local/bin/prometheus/prometheus',
@@ -45,12 +40,21 @@ class prometheus::install {
     shell      => '/usr/sbin/nologin',
   }
 
-  # Create the data directory (PDF requirement)
+  # Parent directory MUST exist first
+  file { '/var/lib/prometheus':
+    ensure => directory,
+    owner  => 'prometheus',
+    group  => 'prometheus',
+    mode   => '0755',
+  }
+
+  # Create the data directory
   file { '/var/lib/prometheus/data':
     ensure => directory,
     owner  => 'prometheus',
     group  => 'prometheus',
     mode   => '0755',
+    require => File['/var/lib/prometheus'],
   }
 
   # Ensure ownership of the Prometheus binary tree

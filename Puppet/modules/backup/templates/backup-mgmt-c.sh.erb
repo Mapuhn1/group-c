@@ -1,16 +1,26 @@
 #!/bin/bash
 
 WRAPPER=/usr/local/lib/backup/rsync-to-backup.sh
-"$WRAPPER" puppet /etc/puppetlabs/code/ /etc/puppetlabs/puppet/
 
-"$WRAPPER" nagios /etc/nagios4/
+# Management specific
 
-"$WRAPPER" apache /etc/apache2/
+"$WRAPPER" puppet-etc /etc/puppetlabs/
 
-"$WRAPPER" syslog /etc/rsyslog.d/
+"$WRAPPER" puppet-opt /opt/puppetlabs/
 
 "$WRAPPER" remote-logs /var/log/remote/
 
-"$WRAPPER" crontab /etc/cron.d/ /var/spool/cron/crontabs/
+# All
+"$WRAPPER" syslog /etc/rsyslog.d/
+
+"$WRAPPER" crontab /var/spool/cron/crontabs/
 
 "$WRAPPER" ufw /etc/ufw
+
+"$WRAPPER" hosts /etc/hosts
+
+"$WRAPPER" dns /etc/resolv.conf
+
+# Machines that backup to backup
+
+"$WRAPPER" backup-keys /root/.ssh 
