@@ -243,6 +243,14 @@ alias => 'Web Servers',
 members => 'mgmt-c.oe2.org.nz,app-c.oe2.org.nz',
 }
 
+# Group containing the web servers
+nagios_hostgroup { 'my-app-servers':
+target => '/etc/nagios4/conf.d/ppt_hostgroups.cfg',
+alias => 'App Servers',
+members => 'app-c.oe2.org.nz',
+}
+
+
 
 # --- Host group: all nodes monitored via NRPE ---
 # Includes the three agent nodes; mgmt-c is excluded
@@ -392,6 +400,14 @@ nagios::monitored_service { 'mgmt-http':
   service_description => 'HTTP',
   hostgroup_name      => 'my-web-servers',
   check_command       => 'web_http',
+}
+
+# -- OwnCloud check
+
+nagios::monitored_service { 'app-owncloud':
+  service_description => 'ownCloud Application',
+  hostgroup_name      => 'my-app-servers',
+  check_command       => 'check_nrpe!check_owncloud',
 }
 
 

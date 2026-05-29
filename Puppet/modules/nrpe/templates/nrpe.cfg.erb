@@ -260,6 +260,8 @@ command[check_filechange]=/usr/lib/nagios/plugins/check_filechange.py -p /var/lo
 command[check_dns]=/usr/lib/nagios/plugins/check_dns -H google.com -w 2 -c 5
 command[check_swap]=/usr/lib/nagios/plugins/check_swap -w 20% -c 10%
 
+command[check_owncloud]=/usr/lib/nagios/plugins/check_http -H owncloud-c.op-bit.nz -u /index.php/login -s ownCloud
+
 #command[check_apt]=/usr/lib/nagios/plugins/check_apt -d
 #command[check_icmp]=/usr/lib/nagios/plugins/check_icmp -H mgmt-c -w 200ms,40% -c 500ms,80%
 
